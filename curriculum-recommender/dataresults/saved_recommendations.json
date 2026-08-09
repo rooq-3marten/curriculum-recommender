@@ -1,0 +1,16 @@
+[
+  {
+    "skill_id": "1",
+    "skill_name": "Python",
+    "skill_category": "Programming",
+    "skill_description": "Python",
+    "curriculum_title": "Python Programming Fundamentals",
+    "curriculum_area": "Programming",
+    "curriculum_level": "Beginner",
+    "recommendation_reason": "Develop core programming concepts with practical coding exercises.",
+    "source_file": "uniskill.csv",
+    "match_score": 100,
+    "saved_id": "2026-07-29T11:15:46",
+    "saved_at": "2026-07-29T11:15:46"
+  }
+]

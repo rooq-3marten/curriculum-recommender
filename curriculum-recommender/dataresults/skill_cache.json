@@ -1,0 +1,17 @@
+{
+  "skills": {
+    "FastAPI": {
+      "importance": 0.95,
+      "priority": 1.14
+    },
+    "Docker": {
+      "importance": 0.85,
+      "priority": 1.02
+    },
+    "Kubernetes": {
+      "importance": 0.8,
+      "priority": 0.96
+    }
+  },
+  "courses": []
+}

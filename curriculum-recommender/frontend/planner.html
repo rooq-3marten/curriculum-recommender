@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Planner | Curriculum Recommender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="mx-auto max-w-7xl px-6 py-8">
+      <nav class="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
+        <div class="text-lg font-semibold">Curriculum Recommender</div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <a class="rounded-full bg-white/10 px-3 py-2" href="/ui/index.html">Home</a>
+          <a class="rounded-full bg-white/10 px-3 py-2" href="/ui/dashboard.html">Dashboard</a>
+          <a class="rounded-full bg-cyan-500 px-3 py-2 text-slate-950" href="/ui/planner.html">Planner</a>
+          <a class="rounded-full bg-white/10 px-3 py-2" href="/ui/careers.html">Careers</a>
+          <a class="rounded-full bg-white/10 px-3 py-2" href="/ui/predictions.html">Predictions</a>
+          <a class="rounded-full bg-white/10 px-3 py-2" href="/ui/methodology.html">Methodology</a>
+        </div>
+      </nav>
+
+      <header class="mb-8 rounded-3xl border border-cyan-400/20 bg-gradient-to-r from-cyan-500/10 to-violet-500/10 p-8">
+        <h1 class="text-3xl font-semibold">Interactive semester planner</h1>
+        <p class="mt-3 max-w-2xl text-slate-300">Drag courses into future semesters, track their weighted value, and export a shareable learning plan.</p>
+      </header>
+
+      <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Current plan</h2>
+            <div class="flex gap-2">
+              <button id="exportBtn" class="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950">Export PDF</button>
+              <button id="shareBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm">Share link</button>
+            </div>
+          </div>
+          <div id="plannerCards" class="space-y-3"></div>
+        </div>
+        <div class="space-y-4">
+          <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+            <h2 class="mb-3 text-xl font-semibold">Semester buckets</h2>
+            <div class="grid gap-3 md:grid-cols-2">
+              <div class="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-3">
+                <div class="mb-2 text-sm font-semibold text-cyan-200">Semester 1</div>
+                <div id="semester1" class="min-h-[140px] space-y-2" ondragover="event.preventDefault()" ondrop="dropToSemester('semester1')"></div>
+              </div>
+              <div class="rounded-2xl border border-violet-400/20 bg-violet-500/10 p-3">
+                <div class="mb-2 text-sm font-semibold text-violet-200">Semester 2</div>
+                <div id="semester2" class="min-h-[140px] space-y-2" ondragover="event.preventDefault()" ondrop="dropToSemester('semester2')"></div>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
+            <h2 class="text-xl font-semibold">Shareable link</h2>
+            <textarea id="shareOutput" class="mt-3 h-24 w-full rounded-2xl border border-white/10 bg-slate-800 p-3 text-sm"></textarea>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const plannerCards = document.getElementById('plannerCards');
+      const semester1 = document.getElementById('semester1');
+      const semester2 = document.getElementById('semester2');
+      const shareOutput = document.getElementById('shareOutput');
+      let activePlan = [];
+      let draggedId = null;
+
+      function loadPlan() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromUrl = urlParams.get('plan');
+        let parsed = [];
+        if (fromUrl) {
+          try {
+            parsed = JSON.parse(decodeURIComponent(fromUrl));
+          } catch (error) {
+            parsed = [];
+          }
+        }
+        if (parsed.length) {
+          activePlan = parsed;
+          localStorage.setItem('curriculum-plan', JSON.stringify(activePlan));
+        } else {
+          activePlan = JSON.parse(localStorage.getItem('curriculum-plan') || '[]');
+        }
+        render();
+      }
+
+      function render() {
+        plannerCards.innerHTML = activePlan.length ? activePlan.map((item) => `
+          <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-3" draggable="true" ondragstart="startDrag('${item.id}')">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <div class="font-semibold">${item.title}</div>
+                <div class="text-sm text-slate-400">${item.skill} • value ${Number(item.value || 0).toFixed(2)}</div>
+              </div>
+              <span class="rounded-full bg-cyan-400/20 px-2 py-1 text-xs text-cyan-200">${item.level || 'Beginner'}</span>
+            </div>
+          </div>
+        `).join('') : '<div class="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-slate-400">No planned courses yet. Visit the dashboard and add a few.</div>';
+
+        semester1.innerHTML = '';
+        semester2.innerHTML = '';
+        activePlan.forEach((item, index) => {
+          const container = (index % 2 === 0) ? semester1 : semester2;
+          container.innerHTML += `
+            <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-2 text-sm" draggable="true" ondragstart="startDrag('${item.id}')">
+              ${item.title}
+            </div>
+          `;
+        });
+        const encoded = encodeURIComponent(JSON.stringify(activePlan));
+        shareOutput.value = `${window.location.origin}/ui/planner.html?plan=${encoded}`;
+      }
+
+      window.startDrag = (id) => {
+        draggedId = id;
+      };
+
+      window.dropToSemester = (bucket) => {
+        if (!draggedId) return;
+        const index = activePlan.findIndex((item) => item.id === draggedId);
+        if (index < 0) return;
+        const item = activePlan[index];
+        item.semester = bucket === 'semester2' ? 2 : 1;
+        activePlan[index] = item;
+        localStorage.setItem('curriculum-plan', JSON.stringify(activePlan));
+        render();
+      };
+
+      document.getElementById('exportBtn').addEventListener('click', () => window.print());
+      document.getElementById('shareBtn').addEventListener('click', async () => {
+        await navigator.clipboard.writeText(shareOutput.value);
+        alert('Share link copied to clipboard');
+      });
+
+      loadPlan();
+    </script>
+  </body>
+</html>

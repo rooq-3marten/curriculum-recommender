@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Curriculum Recommender | Profiles</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <nav>
+        <div><strong>Curriculum Recommender</strong></div>
+        <div class="nav-links">
+          <a href="/ui/">Welcome</a>
+          <a href="/ui/app.html">Explore</a>
+          <a class="active" href="/ui/profiles.html">Profiles</a>
+          <a href="/ui/about.html">About</a>
+        </div>
+      </nav>
+
+      <div class="hero">
+        <div class="panel">
+          <h1>Profiles and saved pathways</h1>
+          <p>Capture your goals, preferred level, and learning style so the platform can personalize future recommendations and keep your best options visible.</p>
+          <div class="row" style="margin-top:12px">
+            <a class="btn" href="/ui/app.html">Open recommender</a>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">Create or update profile</h3>
+          <div class="form-grid">
+            <label>Name<input id="profileName" placeholder="Maya" /></label>
+            <label>Preferred area<select id="profileArea"><option>Any</option><option>Data Science</option><option>Programming</option><option>Artificial Intelligence</option><option>Web Development</option></select></label>
+            <label>Preferred level<select id="profileLevel"><option>Any</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></label>
+            <label>Goals<textarea id="profileGoals" rows="3" placeholder="Become a data analyst"></textarea></label>
+            <label>Career focus<input id="profileFocus" placeholder="Analytics" /></label>
+            <label>Learning style<select id="profileStyle"><option value="guided">guided</option><option value="project-based">project-based</option><option value="portfolio">portfolio</option></select></label>
+            <button id="saveProfile" class="btn">Save profile</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="panel">
+          <h3 style="margin-top:0">Stored profiles</h3>
+          <div id="profileList" class="list"></div>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">Saved recommendations</h3>
+          <div id="savedList" class="list"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const profileName = document.getElementById('profileName');
+      const profileArea = document.getElementById('profileArea');
+      const profileLevel = document.getElementById('profileLevel');
+      const profileGoals = document.getElementById('profileGoals');
+      const profileFocus = document.getElementById('profileFocus');
+      const profileStyle = document.getElementById('profileStyle');
+      const profileList = document.getElementById('profileList');
+      const savedList = document.getElementById('savedList');
+      const saveProfileBtn = document.getElementById('saveProfile');
+
+      function loadProfiles(){try{return JSON.parse(localStorage.getItem('cr_profiles_v1')||'[]')}catch{return[]}}
+      function saveProfiles(profiles){localStorage.setItem('cr_profiles_v1', JSON.stringify(profiles||[]));}
+      function renderProfiles(){
+        const profiles = loadProfiles();
+        if(!profiles.length){profileList.innerHTML='<div class="muted">No saved profiles yet.</div>';return;}
+        profileList.innerHTML = profiles.map((profile, index)=>`<div class="card"><strong>${profile.name || 'Profile '+(index+1)}</strong><div class="muted" style="margin-top:6px">Area: ${profile.prefs?.area||'Any'} • Level: ${profile.prefs?.level||'Any'}</div><div class="muted" style="margin-top:6px">Goals: ${(profile.goals||[]).join(', ')||'None'}</div><div class="muted" style="margin-top:6px">Focus: ${profile.career_focus||'General'} • ${profile.learning_style||'guided'}</div></div>`).join('');
+      }
+      async function renderSaved(){
+        const localSaved = JSON.parse(localStorage.getItem('cr_saved_v1')||'[]');
+        let remoteItems = [];
+        try{const response = await fetch('/saved'); if(response.ok){remoteItems = (await response.json()).items || [];}}catch(e){}
+        const items=[...remoteItems, ...localSaved];
+        if(!items.length){savedList.innerHTML='<div class="muted">Nothing saved yet.</div>';return;}
+        savedList.innerHTML=items.map(item=>`<div class="card"><strong>${item.curriculum_title || item.skill_name || 'Saved option'}</strong><div class="muted" style="margin-top:6px">${item.curriculum_area || ''} • ${item.curriculum_level || ''}</div><div class="muted" style="margin-top:6px">${item.recommendation_reason || ''}</div></div>`).join('');
+      }
+      saveProfileBtn.addEventListener('click', ()=>{
+        const profiles=loadProfiles();
+        const next={name:profileName.value.trim()||'Learner',prefs:{area:profileArea.value,level:profileLevel.value},goals:profileGoals.value.split(',').map(s=>s.trim()).filter(Boolean),career_focus:profileFocus.value.trim()||'General',learning_style:profileStyle.value,last_skills:[]};
+        profiles.push(next); saveProfiles(profiles); renderProfiles(); profileName.value=''; profileGoals.value=''; profileFocus.value='';
+      });
+      renderProfiles(); renderSaved();
+    </script>
+  </body>
+</html>

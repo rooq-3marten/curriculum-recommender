@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Curriculum Recommender | Explore</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <nav>
+        <div><strong>Curriculum Recommender</strong></div>
+        <div class="nav-links">
+          <a href="/ui/">Welcome</a>
+          <a class="active" href="/ui/app.html">Explore</a>
+          <a href="/ui/profiles.html">Profiles</a>
+          <a href="/ui/about.html">About</a>
+        </div>
+      </nav>
+
+      <div class="hero">
+        <div class="panel">
+          <div class="row">
+            <span class="pill">Interactive planning</span>
+            <span class="pill">Expanded course catalog</span>
+          </div>
+          <h1>Discover modern curricula for your next career step</h1>
+          <p>Search by skills, refine by area and level, and save strong options for later. The recommender blends keyword relevance with richer curriculum paths tailored to modern tech roles.</p>
+          <div class="row" style="margin-top:12px">
+            <a class="btn" href="/ui/profiles.html">Manage profiles</a>
+            <a class="btn secondary" href="/ui/about.html">See methodology</a>
+          </div>
+        </div>
+        <div class="panel">
+          <label for="skills">Enter your current skills</label>
+          <input id="skills" type="text" placeholder="e.g. Python, SQL, Data Science" value="Python, Data Science" />
+          <div class="row" style="margin-top:10px">
+            <button id="recommendButton" class="btn">Get recommendations</button>
+            <button id="clearButton" class="btn secondary">Clear</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn secondary" data-preset="AI">AI Track</button>
+            <button class="btn secondary" data-preset="Data">Data Track</button>
+            <button class="btn secondary" data-preset="Dev">Web/Dev Track</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="panel">
+          <div class="row">
+            <div style="flex:1">
+              <label for="areaFilter">Area</label>
+              <select id="areaFilter"><option>Any</option><option>Data Science</option><option>Programming</option><option>Databases</option><option>Artificial Intelligence</option><option>Web Development</option></select>
+            </div>
+            <div style="width:140px">
+              <label for="levelFilter">Level</label>
+              <select id="levelFilter"><option>Any</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div style="flex:1">
+              <label for="method">Method</label>
+              <select id="method"><option value="auto">auto</option><option value="tfidf">tfidf</option><option value="keyword">keyword</option></select>
+            </div>
+            <div style="width:120px">
+              <label for="topN">Max</label>
+              <input id="topN" type="number" min="1" placeholder="10" />
+            </div>
+            <div style="width:200px">
+              <label for="aggregateBy">Aggregate</label>
+              <select id="aggregateBy"><option value="">none</option><option value="curriculum_title">curriculum_title</option><option value="curriculum_area">curriculum_area</option></select>
+            </div>
+          </div>
+          <div class="stats" id="summaryStats"></div>
+          <div class="row" style="margin-top:12px"><div class="muted">Recent searches</div></div>
+          <div id="historyList" class="list" style="margin-top:8px"></div>
+          <div id="output" style="margin-top:12px"></div>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0">Profile insight</h3>
+          <div id="profileInsight" class="card"></div>
+          <h3 style="margin-top:10px">Gap analysis against job postings</h3>
+          <label for="jobPostingText">Paste a job posting</label>
+          <textarea id="jobPostingText" rows="8" placeholder="e.g. We need a backend engineer skilled in Python, FastAPI, SQL, Docker, and Kubernetes."></textarea>
+          <div class="row" style="margin-top:10px">
+            <button id="gapAnalysisButton" class="btn secondary">Analyze gaps</button>
+          </div>
+          <div id="gapAnalysisOutput" class="card" style="margin-top:10px"></div>
+          <h3 style="margin-top:10px">How to use this page</h3>
+          <div class="muted">1. Add your skills. 2. Filter by area and level. 3. Save the strongest options to revisit later.</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const LOCAL_SAVED_KEY = 'cr_saved_v1';
+      const skillsInput = document.getElementById('skills');
+      const output = document.getElementById('output');
+      const summaryStats = document.getElementById('summaryStats');
+      const historyList = document.getElementById('historyList');
+      const profileInsight = document.getElementById('profileInsight');
+      const recommendButton = document.getElementById('recommendButton');
+      const clearButton = document.getElementById('clearButton');
+      const gapAnalysisButton = document.getElementById('gapAnalysisButton');
+      const gapAnalysisOutput = document.getElementById('gapAnalysisOutput');
+      const jobPostingText = document.getElementById('jobPostingText');
+
+      function loadProfiles(){
+        try{return JSON.parse(localStorage.getItem('cr_profiles_v1')||'[]')}catch{return[]}
+      }
+      function saveProfiles(profiles){localStorage.setItem('cr_profiles_v1', JSON.stringify(profiles||[]));}
+      function renderProfileInsight(){
+        const profiles = loadProfiles();
+        const profile = profiles[0];
+        if(!profile){profileInsight.innerHTML='<div class="muted">Create a profile on the Profiles page to personalize recommendations.</div>';return;}
+        profileInsight.innerHTML=`<strong>${profile.name || 'Default profile'}</strong><div class="muted" style="margin-top:6px">Focus: ${profile.career_focus || 'General'} • Style: ${profile.learning_style || 'guided'}</div><div class="muted" style="margin-top:6px">Goals: ${(profile.goals||[]).join(', ') || 'No goals captured yet'}</div><div class="muted" style="margin-top:6px">Recent skills: ${(profile.last_skills||[]).join(', ') || 'No recent skills yet'}</div>`;
+      }
+      function renderMessage(msg){output.innerHTML=`<div class="card"><div class="muted">${msg}</div></div>`;}
+      function updateHistory(skills){const history=JSON.parse(localStorage.getItem('cr_history_v1')||'[]');history.unshift(skills);const unique=[...new Set(history)].slice(0,6);localStorage.setItem('cr_history_v1', JSON.stringify(unique));historyList.innerHTML=unique.map(item=>`<div class="history-item" onclick="document.getElementById('skills').value='${item}'">${item}</div>`).join('');}
+      function renderSummary(payload, skills){const recs=payload.recommendations||[];const areas=[...new Set(recs.map(r=>r.curriculum_area).filter(Boolean))].slice(0,3);summaryStats.innerHTML=`<div class="stat"><strong>${skills}</strong><div class="muted">Search terms</div></div><div class="stat"><strong>${recs.length}</strong><div class="muted">Courses</div></div><div class="stat"><strong>${areas.join(', ')||'Mixed'}</strong><div class="muted">Top areas</div></div>`;}
+      function createCard(rec){const el=document.createElement('div');el.className='card';const badges=[rec.course_variant?`<span class="badge">${rec.course_variant}</span>`:'', rec.learning_mode?`<span class="badge">${rec.learning_mode}</span>`:'', rec.duration_weeks?`<span class="badge">${rec.duration_weeks} weeks</span>`:''].filter(Boolean).join('');el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px"><div><strong>${rec.curriculum_title || rec.skill_name || 'Recommendation'}</strong><div class="muted" style="margin-top:4px">${rec.curriculum_area || ''} • ${rec.curriculum_level || ''}</div></div><div class="muted">${Math.round(rec.match_score || rec.aggregate_score || 0)}</div></div><div style="margin-top:8px">${badges}</div><div class="muted" style="margin-top:8px">${rec.recommendation_reason || ''}</div>`;const saveButton=document.createElement('button');saveButton.className='btn secondary';saveButton.style.marginTop='10px';saveButton.textContent='Save';saveButton.addEventListener('click', async ()=>{const payload=Object.assign({}, rec, {user_profile:'browser'});try{const resp=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!resp.ok) throw new Error('Save failed');saveButton.textContent='Saved';saveButton.disabled=true;const local=JSON.parse(localStorage.getItem(LOCAL_SAVED_KEY)||'[]');local.push(Object.assign({},payload,{saved_local_at:new Date().toISOString()}));localStorage.setItem(LOCAL_SAVED_KEY, JSON.stringify(local));}catch(e){alert('Save failed: '+e.message)}});el.appendChild(saveButton);return el;}
+      function renderRecommendations(payload){output.innerHTML='';const area=document.getElementById('areaFilter').value;const level=document.getElementById('levelFilter').value;const list=payload.recommendations||[];let shown=0;list.forEach(rec=>{if(area!=='Any' && rec.curriculum_area!==area)return;if(level!=='Any' && rec.curriculum_level!==level)return;output.appendChild(createCard(rec));shown++;});if(shown===0) renderMessage('No recommendations match your current filters.');}
+      function renderGapAnalysis(payload){
+        const matched = payload.matched_skills || [];
+        const gaps = payload.gap_skills || [];
+        const coverage = payload.coverage_percent != null ? `${Math.round(payload.coverage_percent * 100)}%` : '0%';
+        gapAnalysisOutput.innerHTML=`<strong>Coverage:</strong> ${coverage}<br/><div class="muted" style="margin-top:8px">Matched skills: ${(matched.length ? matched.join(', ') : 'None')}</div><div class="muted" style="margin-top:6px">Gap skills: ${(gaps.length ? gaps.join(', ') : 'None')}</div>`;
+      }
+      recommendButton.addEventListener('click', async ()=>{
+        const skills=skillsInput.value.trim();
+        if(!skills){renderMessage('Please enter at least one skill.');return;}
+        renderMessage('Loading recommendations...');
+        try{const params=new URLSearchParams();params.set('skills',skills);const method=document.getElementById('method').value;if(method) params.set('method',method);const topN=document.getElementById('topN').value;if(topN) params.set('top_n',topN);const aggregate=document.getElementById('aggregateBy').value;if(aggregate) params.set('aggregate_by',aggregate);const resp=await fetch(`/recommend?${params.toString()}`);if(!resp.ok) throw new Error('Request failed');const payload=await resp.json();const profiles=loadProfiles();if(profiles[0]){profiles[0].last_skills=skills.split(',').map(s=>s.trim()).filter(Boolean);profiles[0].updated_at=new Date().toISOString();saveProfiles(profiles);}updateHistory(skills);renderSummary(payload, skills);renderProfileInsight();renderRecommendations(payload);}catch(err){renderMessage('Error: '+err.message)}});
+      clearButton.addEventListener('click',()=>{skillsInput.value='';output.innerHTML='';summaryStats.innerHTML='';});
+      gapAnalysisButton.addEventListener('click', async ()=>{
+        const curriculumSkills = (skillsInput.value || '').split(',').map(item=>item.trim()).filter(Boolean);
+        const text = jobPostingText.value.trim();
+        if(!text){gapAnalysisOutput.innerHTML='<div class="muted">Paste a job posting first.</div>';return;}
+        gapAnalysisOutput.innerHTML='<div class="muted">Analyzing...</div>';
+        try{
+          const resp = await fetch('/gap-analysis', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({curriculum_skills: curriculumSkills, job_posting_text: text})});
+          if(!resp.ok) throw new Error('Analysis failed');
+          const payload = await resp.json();
+          renderGapAnalysis(payload);
+        }catch(err){gapAnalysisOutput.innerHTML=`<div class="muted">${err.message}</div>`;}
+      });
+      document.querySelectorAll('[data-preset]').forEach(btn=>btn.addEventListener('click',()=>{const mapping={AI:'Python, AI, SQL',Data:'Data Science, SQL, Analytics',Dev:'Web Development, Backend, Cloud'};skillsInput.value=mapping[btn.dataset.preset]||'';recommendButton.click();}));
+      renderProfileInsight();
+      updateHistory(skillsInput.value || 'Python, Data Science');
+    </script>
+  </body>
+</html>

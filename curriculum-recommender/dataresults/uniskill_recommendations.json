@@ -1,0 +1,24 @@
+[
+  {
+    "skill_id": "1",
+    "skill_name": "Python",
+    "skill_category": "Programming",
+    "skill_description": "Python",
+    "curriculum_title": "Python Programming Fundamentals",
+    "curriculum_area": "Programming",
+    "curriculum_level": "Beginner",
+    "recommendation_reason": "Develop core programming concepts with practical coding exercises.",
+    "source_file": "uniskill.csv"
+  },
+  {
+    "skill_id": "2",
+    "skill_name": "Data Science",
+    "skill_category": "Data Science",
+    "skill_description": "Data Science",
+    "curriculum_title": "Data Science Foundations",
+    "curriculum_area": "Data Science",
+    "curriculum_level": "Beginner",
+    "recommendation_reason": "Build a strong base in analysis, statistics, and visualization.",
+    "source_file": "uniskill.csv"
+  }
+]

@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Curriculum Recommender</title>
+    <style>
+      :root{--bg:#f4f7fb;--card:#fff;--muted:#64748b;--primary:#2563eb;--accent:#10b981;--border:#e2e8f0}
+      *{box-sizing:border-box}
+      body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(135deg,#eef4ff 0%,#f8fbff 100%);color:#0f172a}
+      .app{max-width:1120px;margin:0 auto;padding:24px}
+      header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+      .brand{display:flex;align-items:center;gap:12px}
+      .logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#2563eb,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+      h1{margin:0;font-size:1.2rem}
+      .hero{display:grid;grid-template-columns:1.55fr .95fr;gap:16px;margin-bottom:16px}
+      .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 10px 24px rgba(15,23,42,.06)}
+      .muted{color:var(--muted)}
+      .row{display:flex;gap:10px;flex-wrap:wrap}
+      .pill{padding:7px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-weight:600;font-size:.85rem}
+      .controls{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}
+      label{display:block;font-weight:600;margin-bottom:6px;color:#334155}
+      input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff}
+      button{background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+      button.ghost{background:#fff;color:var(--primary);border:1px solid var(--border)}
+      .small{padding:8px 11px;font-size:.95rem}
+      .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+      .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:.84rem;font-weight:600}
+      .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+      .stat{padding:10px;border-radius:12px;background:#f8fafc;border:1px solid var(--border)}
+      .card{padding:14px;border-radius:14px;border:1px solid var(--border);background:#fff;margin-bottom:12px}
+      .badge{display:inline-block;padding:5px 8px;border-radius:999px;background:#ecfeff;color:#0f766e;font-size:.75rem;font-weight:700;margin-right:6px}
+      .stars{display:flex;gap:6px;margin-top:8px}
+      .star{cursor:pointer;color:#d1d5db}
+      .star.selected{color:#f59e0b}
+      .history{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+      .history-item{padding:8px;border-radius:10px;background:#f8fafc;border:1px solid var(--border);cursor:pointer}
+      .history-item:hover{background:#eff6ff}
+      @media(max-width:900px){.hero,.controls{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}.stats{grid-template-columns:1fr}}
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="brand">
+          <div class="logo">CR</div>
+          <div>
+            <h1>Curriculum Recommender</h1>
+            <div class="muted">Plan smarter learning paths for data, software, and AI careers</div>
+          </div>
+        </div>
+        <div class="row">
+          <a href="/ui/dashboard.html" class="ghost small" style="display:inline-block;padding:8px 11px;border:1px solid #e6edf3;border-radius:8px;text-decoration:none;color:#2563eb">Dashboard</a>
+          <a href="/ui/app.html" class="ghost small" style="display:inline-block;padding:8px 11px;border:1px solid #e6edf3;border-radius:8px;text-decoration:none;color:#2563eb">Explore</a>
+          <a href="/ui/profiles.html" class="ghost small" style="display:inline-block;padding:8px 11px;border:1px solid #e6edf3;border-radius:8px;text-decoration:none;color:#2563eb">Profiles</a>
+          <a href="/ui/about.html" class="ghost small" style="display:inline-block;padding:8px 11px;border:1px solid #e6edf3;border-radius:8px;text-decoration:none;color:#2563eb">About</a>
+        </div>
+      </header>
+
+      <div class="hero">
+        <div class="panel">
+          <div class="row">
+            <span class="pill">Interactive learning planner</span>
+            <span class="pill">Expanded course catalog</span>
+          </div>
+          <h2 style="margin-bottom:6px">Discover the best curriculum options for your career goals</h2>
+          <p class="muted">Enter your skills, explore several course formats, and save strong matches for later.</p>
+          <div class="tag-row" id="skillTags"></div>
+          <div class="stats" id="summaryStats"></div>
+        </div>
+        <div class="panel">
+          <label for="skills">Enter your current skills</label>
+          <input id="skills" type="text" placeholder="e.g. Python, SQL, Data Analysis" value="Python, Data Science" />
+          <div class="row" style="margin-top:10px">
+            <button id="recommendButton">Get Recommendations</button>
+            <button id="clearButton" class="ghost">Clear</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="presetAI" class="ghost small">AI Track</button>
+            <button id="presetData" class="ghost small">Data Track</button>
+            <button id="presetDev" class="ghost small">Web/Dev Track</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="panel">
+          <div class="row">
+            <div style="flex:1">
+              <label for="areaFilter">Area</label>
+              <select id="areaFilter"><option>Any</option><option>Data Science</option><option>Programming</option><option>Databases</option><option>Artificial Intelligence</option><option>Web Development</option></select>
+            </div>
+            <div style="width:120px">
+              <label for="levelFilter">Level</label>
+              <select id="levelFilter"><option>Any</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div style="flex:1">
+              <label for="method">Method</label>
+              <select id="method"><option value="auto">auto</option><option value="tfidf">tfidf</option><option value="keyword">keyword</option></select>
+            </div>
+            <div style="width:120px">
+              <label for="topN">Max</label>
+              <input id="topN" type="number" min="1" placeholder="10" />
+            </div>
+            <div style="width:190px">
+              <label for="aggregateBy">Aggregate</label>
+              <select id="aggregateBy"><option value="">none</option><option value="curriculum_title">curriculum_title</option><option value="curriculum_area">curriculum_area</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div class="muted">Recent searches</div>
+          </div>
+          <div id="historyList" class="history"></div>
+          <div id="output" style="margin-top:12px"></div>
+        </div>
+
+        <aside class="panel">
+          <h3 style="margin-top:0">Quick actions</h3>
+          <div class="row" style="flex-direction:column;align-items:stretch">
+            <button id="quickRecommend" class="ghost">Use selected profile</button>
+            <button id="exportProfile" class="ghost">Export profile</button>
+            <button id="importProfile" class="ghost">Import profile</button>
+            <button id="clearSavedLocal" class="ghost">Clear local saved</button>
+          </div>
+          <div style="margin-top:14px">
+            <h4 style="margin:0">Profile preferences</h4>
+            <div class="muted" style="margin-top:6px">Remember default areas and levels for faster exploration.</div>
+            <label for="prefArea" style="margin-top:8px">Default area</label>
+            <select id="prefArea"><option>Any</option><option>Data Science</option><option>Programming</option><option>Artificial Intelligence</option></select>
+            <label for="prefLevel" style="margin-top:8px">Default level</label>
+            <select id="prefLevel"><option>Any</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+          </div>
+        </aside>
+      </div>
+
+      <div id="savedModal" style="display:none;margin-top:16px"></div>
+      <div id="profilesModal" style="display:none;margin-top:16px"></div>
+    </div>
+
+    <script>
+      const DEFAULT_PROFILES_KEY='cr_profiles_v1';
+      const LOCAL_SAVED_KEY='cr_saved_v1';
+      const skillsInput=document.getElementById('skills');
+      const profileDetailsBox=document.createElement('div');
+      profileDetailsBox.className='card';
+      profileDetailsBox.style.display='none';
+      profileDetailsBox.style.marginTop='10px';
+      const recommendButton=document.getElementById('recommendButton');
+      const clearButton=document.getElementById('clearButton');
+      const output=document.getElementById('output');
+      const skillTags=document.getElementById('skillTags');
+      const summaryStats=document.getElementById('summaryStats');
+      const historyList=document.getElementById('historyList');
+      const profileSelect=document.getElementById('profileSelect');
+      const avatar=document.getElementById('avatar');
+      const manageProfilesBtn=document.getElementById('manageProfiles');
+      const viewSavedBtn=document.getElementById('viewSaved');
+      const exportProfileBtn=document.getElementById('exportProfile');
+      const importProfileBtn=document.getElementById('importProfile');
+      const clearSavedLocalBtn=document.getElementById('clearSavedLocal');
+      const quickRecommendBtn=document.getElementById('quickRecommend');
+      const presetAI=document.getElementById('presetAI');
+      const presetData=document.getElementById('presetData');
+      const presetDev=document.getElementById('presetDev');
+
+      function loadProfiles(){try{return JSON.parse(localStorage.getItem(DEFAULT_PROFILES_KEY)||'[]')}catch{return[]}}
+      function saveProfiles(profiles){localStorage.setItem(DEFAULT_PROFILES_KEY,JSON.stringify(profiles||[]));}
+      function currentProfile(){const profiles=loadProfiles();const idx=0;return profiles[idx]||null}
+      function setAvatar(name){document.getElementById('avatar')?.remove();}
+
+      function renderMessage(msg){output.innerHTML=`<div class="card"><div class="muted">${msg}</div></div>`;}
+      function updateSkillTags(skills){const items=skills.split(',').map(s=>s.trim()).filter(Boolean);skillTags.innerHTML=items.slice(0,6).map(item=>`<span class="tag">${item}</span>`).join('');}
+      function updateHistory(skills){const history=JSON.parse(localStorage.getItem('cr_history_v1')||'[]');history.unshift(skills);const unique=[...new Set(history)].slice(0,6);localStorage.setItem('cr_history_v1',JSON.stringify(unique));historyList.innerHTML=unique.map(item=>`<div class="history-item" onclick="document.getElementById('skills').value='${item}'">${item}</div>`).join('');}
+      function renderSummary(payload, skills){const recs=payload.recommendations||[];const areas=[...new Set(recs.map(r=>r.curriculum_area).filter(Boolean))].slice(0,3);summaryStats.innerHTML=`<div class="stat"><strong>${skills}</strong><div class="muted">Search terms</div></div><div class="stat"><strong>${recs.length}</strong><div class="muted">Courses</div></div><div class="stat"><strong>${areas.join(', ')||'Mixed'}</strong><div class="muted">Top areas</div></div>`;}
+      function renderProfileInsight(){
+        const profiles=loadProfiles();
+        const profile=profiles[0];
+        if(!profile){profileDetailsBox.style.display='none';return;}
+        const goals=(profile.goals||[]).join(', ')||'No goals captured';
+        const focus=profile.career_focus||'General';
+        const style=profile.learning_style||'guided';
+        profileDetailsBox.innerHTML=`<div class="muted">Profile insight</div><strong>${profile.name || 'Default'}</strong><div class="muted" style="margin-top:6px">Focus: ${focus} • Style: ${style}</div><div class="muted" style="margin-top:4px">Goals: ${goals}</div>`;
+        profileDetailsBox.style.display='block';
+        output.insertAdjacentElement('beforebegin', profileDetailsBox);
+      }
+
+      recommendButton.addEventListener('click', async ()=>{
+        const skills=skillsInput.value.trim();
+        if(!skills){renderMessage('Please enter at least one skill.');return;}
+        renderMessage('Loading recommendations...');
+        try{
+          const params=new URLSearchParams();params.set('skills',skills);
+          const method=document.getElementById('method').value;if(method) params.set('method',method);
+          const topN=document.getElementById('topN').value;if(topN) params.set('top_n',topN);
+          const aggregate=document.getElementById('aggregateBy').value;if(aggregate) params.set('aggregate_by',aggregate);
+          const resp=await fetch(`/recommend?${params.toString()}`);
+          if(!resp.ok) throw new Error('Request failed');
+          const payload=await resp.json();
+          const profiles=loadProfiles();
+          if(profiles[0]){
+            profiles[0].last_skills=skills.split(',').map(s=>s.trim()).filter(Boolean);
+            profiles[0].updated_at=new Date().toISOString();
+            saveProfiles(profiles);
+          }
+          updateSkillTags(skills);updateHistory(skills);renderSummary(payload, skills);renderProfileInsight();renderRecommendations(payload);
+        }catch(err){renderMessage('Error: '+err.message)}
+      });
+      clearButton.addEventListener('click',()=>{skillsInput.value='';output.innerHTML='';skillTags.innerHTML='';summaryStats.innerHTML='';});
+      presetAI.addEventListener('click',()=>{skillsInput.value='Python, AI, SQL'; recommendButton.click();});
+      presetData.addEventListener('click',()=>{skillsInput.value='Data Science, SQL, Analytics'; recommendButton.click();});
+      presetDev.addEventListener('click',()=>{skillsInput.value='Web Development, Backend, Cloud'; recommendButton.click();});
+      manageProfilesBtn.addEventListener('click',()=>{alert('Profile management is available through the saved view and local browser storage.');});
+      viewSavedBtn.addEventListener('click',()=>{alert('Saved recommendations are available in the browser storage and the backend /saved endpoint.');});
+      exportProfileBtn.addEventListener('click',()=>{alert('Export profile functionality is ready for integration with your backend profile API.');});
+      importProfileBtn.addEventListener('click',()=>{alert('Import profile functionality is ready for integration with your backend profile API.');});
+      clearSavedLocalBtn.addEventListener('click',()=>{localStorage.removeItem(LOCAL_SAVED_KEY);alert('Local saved items cleared.');});
+      quickRecommendBtn.addEventListener('click',()=>recommendButton.click());
+
+      function createCard(rec, withSave=true){const el=document.createElement('div');el.className='card';const title=rec.curriculum_title||rec.skill_name||'Recommendation';const badge=rec.course_variant?`<span class="badge">${rec.course_variant}</span>`:'';const mode=rec.learning_mode?`<span class="badge">${rec.learning_mode}</span>`:'';const duration=rec.duration_weeks?`<span class="badge">${rec.duration_weeks} weeks</span>`:'';el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><strong>${title}</strong><div class="muted" style="margin-top:4px">${rec.curriculum_area||''} • ${rec.curriculum_level||''}</div></div><div class="muted">Score: ${Math.round(rec.match_score||rec.aggregate_score||0)}</div></div><div style="margin-top:8px">${badge}${mode}${duration}</div><div class="muted" style="margin-top:8px">${rec.recommendation_reason||''}</div>`;const ratingWrap=document.createElement('div');ratingWrap.className='stars';for(let i=1;i<=5;i++){const s=document.createElement('span');s.className='star';s.textContent='★';s.addEventListener('click',()=>Array.from(ratingWrap.children).forEach((c,idx)=>c.classList.toggle('selected', idx < i)));ratingWrap.appendChild(s)}el.appendChild(ratingWrap);if(withSave){const btn=document.createElement('button');btn.textContent='Save';btn.style.marginTop='10px';btn.addEventListener('click', async()=>{const payload=Object.assign({},rec,{user_profile:'browser',rating:Array.from(ratingWrap.children).filter(c=>c.classList.contains('selected')).length||null});try{const resp=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!resp.ok) throw new Error('Save failed');btn.textContent='Saved';btn.disabled=true}catch(e){alert('Save failed: '+e.message)}});el.appendChild(btn)}return el;}
+      function renderRecommendations(payload){output.innerHTML='';const area=document.getElementById('areaFilter').value;const level=document.getElementById('levelFilter').value;const list=payload.recommendations||[];let shown=0;list.forEach(rec=>{if(area!=='Any' && rec.curriculum_area!==area)return;if(level!=='Any' && rec.curriculum_level!==level)return;output.appendChild(createCard(rec,true));shown++;});if(shown===0) renderMessage('No recommendations match your current filters.');}
+      const history=JSON.parse(localStorage.getItem('cr_history_v1')||'[]');historyList.innerHTML=history.map(item=>`<div class="history-item" onclick="document.getElementById('skills').value='${item}'">${item}</div>`).join('');
+      renderProfileInsight();
+    </script>
+  </body>
+</html>
+        <div class="panel">
+          <div class="row">
+            <span class="pill">Interactive learning planner</span>
+            <span class="pill">Expanded course catalog</span>
+          </div>
+          <h2 style="margin-bottom:6px">Discover the best curriculum options for your career goals</h2>
+          <p class="muted">Enter your skills, explore several course formats, and save strong matches for later.</p>
+          <div class="tag-row" id="skillTags"></div>
+          <div class="stats" id="summaryStats"></div>
+        </div>
+        <div class="panel">
+          <label for="skills">Enter your current skills</label>
+          <input id="skills" type="text" placeholder="e.g. Python, SQL, Data Analysis" value="Python, Data Science" />
+          <div class="row" style="margin-top:10px">
+            <button id="recommendButton">Get Recommendations</button>
+            <button id="clearButton" class="ghost">Clear</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="presetAI" class="ghost small">AI Track</button>
+            <button id="presetData" class="ghost small">Data Track</button>
+            <button id="presetDev" class="ghost small">Web/Dev Track</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="panel">
+          <div class="row">
+            <div style="flex:1">
+              <label for="areaFilter">Area</label>
+              <select id="areaFilter"><option>Any</option><option>Data Science</option><option>Programming</option><option>Databases</option><option>Artificial Intelligence</option><option>Web Development</option></select>
+            </div>
+            <div style="width:120px">
+              <label for="levelFilter">Level</label>
+              <select id="levelFilter"><option>Any</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div style="flex:1">
+              <label for="method">Method</label>
+              <select id="method"><option value="auto">auto</option><option value="tfidf">tfidf</option><option value="keyword">keyword</option></select>
+            </div>
+            <div style="width:120px">
+              <label for="topN">Max</label>
+              <input id="topN" type="number" min="1" placeholder="10" />
+            </div>
+            <div style="width:190px">
+              <label for="aggregateBy">Aggregate</label>
+              <select id="aggregateBy"><option value="">none</option><option value="curriculum_title">curriculum_title</option><option value="curriculum_area">curriculum_area</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div class="muted">Recent searches</div>
+          </div>
+          <div id="historyList" class="history"></div>
+          <div id="output" style="margin-top:12px"></div>
+        </div>
+
+        <aside class="panel">
+          <h3 style="margin-top:0">Quick actions</h3>
+          <div class="row" style="flex-direction:column;align-items:stretch">
+            <button id="quickRecommend" class="ghost">Use selected profile</button>
+            <button id="exportProfile" class="ghost">Export profile</button>
+            <button id="importProfile" class="ghost">Import profile</button>
+            <button id="clearSavedLocal" class="ghost">Clear local saved</button>
+          </div>
+          <div style="margin-top:14px">
+            <h4 style="margin:0">Profile preferences</h4>
+            <div class="muted" style="margin-top:6px">Remember default areas and levels for faster exploration.</div>
+            <label for="prefArea" style="margin-top:8px">Default area</label>
+            <select id="prefArea"><option>Any</option><option>Data Science</option><option>Programming</option><option>Artificial Intelligence</option></select>
+            <label for="prefLevel" style="margin-top:8px">Default level</label>
+            <select id="prefLevel"><option>Any</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+          </div>
+        </aside>
+      </div>
+
+      <div id="savedModal" style="display:none;margin-top:16px"></div>
+      <div id="profilesModal" style="display:none;margin-top:16px"></div>
+    </div>
+
+    <script>
+      const DEFAULT_PROFILES_KEY='cr_profiles_v1';
+      const LOCAL_SAVED_KEY='cr_saved_v1';
+      const skillsInput=document.getElementById('skills');
+      const profileDetailsBox=document.createElement('div');
+      profileDetailsBox.className='card';
+      profileDetailsBox.style.display='none';
+      profileDetailsBox.style.marginTop='10px';
+      const recommendButton=document.getElementById('recommendButton');
+      const clearButton=document.getElementById('clearButton');
+      const output=document.getElementById('output');
+      const skillTags=document.getElementById('skillTags');
+      const summaryStats=document.getElementById('summaryStats');
+      const historyList=document.getElementById('historyList');
+      const profileSelect=document.getElementById('profileSelect');
+      const avatar=document.getElementById('avatar');
+      const manageProfilesBtn=document.getElementById('manageProfiles');
+      const viewSavedBtn=document.getElementById('viewSaved');
+      const exportProfileBtn=document.getElementById('exportProfile');
+      const importProfileBtn=document.getElementById('importProfile');
+      const clearSavedLocalBtn=document.getElementById('clearSavedLocal');
+      const quickRecommendBtn=document.getElementById('quickRecommend');
+      const presetAI=document.getElementById('presetAI');
+      const presetData=document.getElementById('presetData');
+      const presetDev=document.getElementById('presetDev');
+
+      function loadProfiles(){try{return JSON.parse(localStorage.getItem(DEFAULT_PROFILES_KEY)||'[]')}catch{return[]}}
+      function saveProfiles(profiles){localStorage.setItem(DEFAULT_PROFILES_KEY,JSON.stringify(profiles||[]));}
+      function currentProfile(){const profiles=loadProfiles();const idx=0;return profiles[idx]||null}
+      function setAvatar(name){document.getElementById('avatar')?.remove();}
+
+      function renderMessage(msg){output.innerHTML=`<div class="card"><div class="muted">${msg}</div></div>`;}
+      function updateSkillTags(skills){const items=skills.split(',').map(s=>s.trim()).filter(Boolean);skillTags.innerHTML=items.slice(0,6).map(item=>`<span class="tag">${item}</span>`).join('');}
+      function updateHistory(skills){const history=JSON.parse(localStorage.getItem('cr_history_v1')||'[]');history.unshift(skills);const unique=[...new Set(history)].slice(0,6);localStorage.setItem('cr_history_v1',JSON.stringify(unique));historyList.innerHTML=unique.map(item=>`<div class="history-item" onclick="document.getElementById('skills').value='${item}'">${item}</div>`).join('');}
+      function renderSummary(payload, skills){const recs=payload.recommendations||[];const areas=[...new Set(recs.map(r=>r.curriculum_area).filter(Boolean))].slice(0,3);summaryStats.innerHTML=`<div class="stat"><strong>${skills}</strong><div class="muted">Search terms</div></div><div class="stat"><strong>${recs.length}</strong><div class="muted">Courses</div></div><div class="stat"><strong>${areas.join(', ')||'Mixed'}</strong><div class="muted">Top areas</div></div>`;}
+      function renderProfileInsight(){
+        const profiles=loadProfiles();
+        const profile=profiles[0];
+        if(!profile){profileDetailsBox.style.display='none';return;}
+        const goals=(profile.goals||[]).join(', ')||'No goals captured';
+        const focus=profile.career_focus||'General';
+        const style=profile.learning_style||'guided';
+        profileDetailsBox.innerHTML=`<div class="muted">Profile insight</div><strong>${profile.name || 'Default'}</strong><div class="muted" style="margin-top:6px">Focus: ${focus} • Style: ${style}</div><div class="muted" style="margin-top:4px">Goals: ${goals}</div>`;
+        profileDetailsBox.style.display='block';
+        output.insertAdjacentElement('beforebegin', profileDetailsBox);
+      }
+
+      recommendButton.addEventListener('click', async ()=>{
+        const skills=skillsInput.value.trim();
+        if(!skills){renderMessage('Please enter at least one skill.');return;}
+        renderMessage('Loading recommendations...');
+        try{
+          const params=new URLSearchParams();params.set('skills',skills);
+          const method=document.getElementById('method').value;if(method) params.set('method',method);
+          const topN=document.getElementById('topN').value;if(topN) params.set('top_n',topN);
+          const aggregate=document.getElementById('aggregateBy').value;if(aggregate) params.set('aggregate_by',aggregate);
+          const resp=await fetch(`/recommend?${params.toString()}`);
+          if(!resp.ok) throw new Error('Request failed');
+          const payload=await resp.json();
+          const profiles=loadProfiles();
+          if(profiles[0]){
+            profiles[0].last_skills=skills.split(',').map(s=>s.trim()).filter(Boolean);
+            profiles[0].updated_at=new Date().toISOString();
+            saveProfiles(profiles);
+          }
+          updateSkillTags(skills);updateHistory(skills);renderSummary(payload, skills);renderProfileInsight();renderRecommendations(payload);
+        }catch(err){renderMessage('Error: '+err.message)}
+      });
+      clearButton.addEventListener('click',()=>{skillsInput.value='';output.innerHTML='';skillTags.innerHTML='';summaryStats.innerHTML='';});
+      presetAI.addEventListener('click',()=>{skillsInput.value='Python, AI, SQL'; recommendButton.click();});
+      presetData.addEventListener('click',()=>{skillsInput.value='Data Science, SQL, Analytics'; recommendButton.click();});
+      presetDev.addEventListener('click',()=>{skillsInput.value='Web Development, Backend, Cloud'; recommendButton.click();});
+      manageProfilesBtn.addEventListener('click',()=>{alert('Profile management is available through the saved view and local browser storage.');});
+      viewSavedBtn.addEventListener('click',()=>{alert('Saved recommendations are available in the browser storage and the backend /saved endpoint.');});
+      exportProfileBtn.addEventListener('click',()=>{alert('Export profile functionality is ready for integration with your backend profile API.');});
+      importProfileBtn.addEventListener('click',()=>{alert('Import profile functionality is ready for integration with your backend profile API.');});
+      clearSavedLocalBtn.addEventListener('click',()=>{localStorage.removeItem(LOCAL_SAVED_KEY);alert('Local saved items cleared.');});
+      quickRecommendBtn.addEventListener('click',()=>recommendButton.click());
+
+      function createCard(rec, withSave=true){const el=document.createElement('div');el.className='card';const title=rec.curriculum_title||rec.skill_name||'Recommendation';const badge=rec.course_variant?`<span class="badge">${rec.course_variant}</span>`:'';const mode=rec.learning_mode?`<span class="badge">${rec.learning_mode}</span>`:'';const duration=rec.duration_weeks?`<span class="badge">${rec.duration_weeks} weeks</span>`:'';el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><strong>${title}</strong><div class="muted" style="margin-top:4px">${rec.curriculum_area||''} • ${rec.curriculum_level||''}</div></div><div class="muted">Score: ${Math.round(rec.match_score||rec.aggregate_score||0)}</div></div><div style="margin-top:8px">${badge}${mode}${duration}</div><div class="muted" style="margin-top:8px">${rec.recommendation_reason||''}</div>`;const ratingWrap=document.createElement('div');ratingWrap.className='stars';for(let i=1;i<=5;i++){const s=document.createElement('span');s.className='star';s.textContent='★';s.addEventListener('click',()=>Array.from(ratingWrap.children).forEach((c,idx)=>c.classList.toggle('selected', idx < i)));ratingWrap.appendChild(s)}el.appendChild(ratingWrap);if(withSave){const btn=document.createElement('button');btn.textContent='Save';btn.style.marginTop='10px';btn.addEventListener('click', async()=>{const payload=Object.assign({},rec,{user_profile:'browser',rating:Array.from(ratingWrap.children).filter(c=>c.classList.contains('selected')).length||null});try{const resp=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!resp.ok) throw new Error('Save failed');btn.textContent='Saved';btn.disabled=true}catch(e){alert('Save failed: '+e.message)}});el.appendChild(btn)}return el;}
+      function renderRecommendations(payload){output.innerHTML='';const area=document.getElementById('areaFilter').value;const level=document.getElementById('levelFilter').value;const list=payload.recommendations||[];let shown=0;list.forEach(rec=>{if(area!=='Any' && rec.curriculum_area!==area)return;if(level!=='Any' && rec.curriculum_level!==level)return;output.appendChild(createCard(rec,true));shown++;});if(shown===0) renderMessage('No recommendations match your current filters.');}
+      const history=JSON.parse(localStorage.getItem('cr_history_v1')||'[]');historyList.innerHTML=history.map(item=>`<div class="history-item" onclick="document.getElementById('skills').value='${item}'">${item}</div>`).join('');
+      renderProfileInsight();
+    </script>
+  </body>
+</html>

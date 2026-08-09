@@ -1,0 +1,7 @@
+skill_id,skill_name,skill_category,skill_description,curriculum_title,curriculum_area,curriculum_level,recommendation_reason,source_file,course_variant,learning_mode,duration_weeks,certificate_available
+1-1,Python,Programming,Python,Python Programming Fundamentals Essentials,Programming,Beginner,Develop core programming concepts with practical coding exercises and mini-projects.,uniskill.csv,foundation,guided,4,yes
+1-2,Python,Programming,Python,Python Programming Fundamentals Practicum,Programming,Intermediate,Apply Python in a practical project-driven experience.,uniskill.csv,project,project-based,6,yes
+1-3,Python,Programming,Python,Python Programming Fundamentals Capstone,Programming,Advanced,Advance your Python expertise with portfolio-ready challenges.,uniskill.csv,capstone,portfolio,8,yes
+2-4,Data Science,Data Science,Data Science,Data Science Foundations Essentials,Data Science,Beginner,"Build a strong base in analysis, statistics, visualization, and experiment-driven thinking.",uniskill.csv,foundation,guided,4,yes
+2-5,Data Science,Data Science,Data Science,Data Science Foundations Practicum,Data Science,Intermediate,Apply Data Science in a practical project-driven experience.,uniskill.csv,project,project-based,6,yes
+2-6,Data Science,Data Science,Data Science,Data Science Foundations Capstone,Data Science,Advanced,Advance your Data Science expertise with portfolio-ready challenges.,uniskill.csv,capstone,portfolio,8,yes

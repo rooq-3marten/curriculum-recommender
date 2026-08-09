@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps
+
+      - name: Build recommendation data
+        run: python backend/collect_curriculum.py
+
+      - name: Start API server
+        run: nohup python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000 &
+
+      - name: Wait for API
+        run: |
+          python - <<'PY'
+import time,urllib.request
+for i in range(20):
+    try:
+        urllib.request.urlopen('http://127.0.0.1:8000/', timeout=1)
+        print('up')
+        break
+    except Exception:
+        time.sleep(1)
+else:
+    raise SystemExit('API did not start')
+PY
+
+      - name: Run E2E Playwright tests
+        run: pytest tests/e2e -q
+
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: tests/e2e/artifacts/**
