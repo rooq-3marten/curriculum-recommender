@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from backend.advanced_recommender import build_gap_report, build_progress_snapshot, optimize_course_selection
@@ -17,6 +18,7 @@ from backend.storage import save_record, load_saved
 from backend.profiles import load_profiles, add_profile, update_profile, delete_profile
 from fastapi import HTTPException
 
+
 app = FastAPI(title="Curriculum Recommender API", version="1.0.0")
 firebase_service = FirebaseService()
 
@@ -25,6 +27,10 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"]
+)
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    return RedirectResponse(url="/ui/"
 )
 
 app.mount(
